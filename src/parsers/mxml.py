@@ -3,25 +3,38 @@ import xml.etree.ElementTree as ElementTree
 import xml.dom.minidom as minidom
 from random import randrange
 
-def get_meta(map : dict, key : str):
+def get_meta(question_dict : dict, key : str):
 
-    if(not (key in map["metadata"])):
+    if(not (key in question_dict["metadata"])):
         return ""
 
-    if(len(map["metadata"][key]) == 1):
-        return map["metadata"][key][0]
+    if(len(question_dict["metadata"][key]) == 1):
+        return question_dict["metadata"][key][0]
     else:
-        return map["metadata"][key]
+        return question_dict["metadata"][key]
 
-def set_meta(map : dict, key : str, value : any):
-    if(key in map["metadata"]):
-        map["metadata"][key].append(value)
+def set_meta(question_dict : dict, key : str, value : any):
+    if(key in question_dict["metadata"]):
+        question_dict["metadata"][key].append(value)
     else :
-        map["metadata"][key] = []
-        map["metadata"][key].append(value)
+        question_dict["metadata"][key] = []
+        question_dict["metadata"][key].append(value)
 
+def quiz_json_to_mxml(json_arr : list):
+    quizMXML = ElementTree.Element('quiz')
+    for mxml_elem in list(map(json_to_mxml, json_arr)):
+        quizMXML.append(mxml_elem)
 
-def json_to_mxml(json_question : str, quiz : ElementTree) -> str:
+    roughXML = ElementTree.tostring(quizMXML)
+    reparsed = minidom.parseString(roughXML)
+    prettyXML = reparsed.toprettyxml()
+    return prettyXML
+
+def quiz_mxml_to_json(file_content : ElementTree.Element):
+    mxml_element_tree = ElementTree.fromstring(file_content)
+    return list(map(mxml_to_json, mxml_element_tree))
+
+def json_to_mxml(json_question : str) -> ElementTree.Element:
     """
     Generates the Moodle XML entry for the given question
 
@@ -31,7 +44,7 @@ def json_to_mxml(json_question : str, quiz : ElementTree) -> str:
     """
     # creating the hierarchy
     json_obj = json.loads(json_question)
-    question = ElementTree.SubElement(quiz, 'question')
+    question = ElementTree.SubElement(ElementTree.Element("quiz"), 'question')
     nameText = ElementTree.SubElement(ElementTree.SubElement(question, 'name'), 'text')
     questionText = ElementTree.SubElement(question, 'questiontext')
     tags = ElementTree.SubElement(question, 'tags')
@@ -139,5 +152,5 @@ def mxml_to_json(xml: ElementTree.Element,
 
                 
     
-    question["correctAnswersNo"] = correct_ans
+    question["correct_answers_no"] = correct_ans
     return json.dumps(question, indent=2)
